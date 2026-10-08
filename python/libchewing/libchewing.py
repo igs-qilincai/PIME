@@ -27,6 +27,13 @@ if sys.platform == "win32": # Windows
     if not os.path.exists(dll_path):
         dll_path = "chewing.dll" # search in system path
     _libchewing = CDLL(dll_path)
+elif sys.platform == "darwin": # macOS
+    import os.path
+    # find in current dir first (the macOS app bundle puts it here)
+    dll_path = os.path.join(os.path.dirname(__file__), "libchewing.dylib")
+    if not os.path.exists(dll_path):
+        dll_path = "libchewing.dylib" # search in the dyld paths
+    _libchewing = CDLL(dll_path)
 else: # UNIX-like systems
     _libchewing = CDLL('libchewing.so.3')
 
