@@ -41,10 +41,10 @@ COOKIE_ID = "chewing_config_token"
 
 SERVER_TIMEOUT = 120
 
-# syspath 參數可包含多個路徑，用 ; 分隔
+# syspath 參數可包含多個路徑，Windows 用 ; 分隔，macOS 用 : 分隔
 # 此處把 user 設定檔目錄插入到 system-wide 資料檔路徑前
 # 如此使用者變更設定後，可以比系統預設值有優先權
-search_paths = ";".join((chewingConfig.getConfigDir(), CHEWING_DATA_DIR)).encode("UTF-8")
+search_paths = os.pathsep.join((chewingConfig.getConfigDir(), CHEWING_DATA_DIR)).encode("UTF-8")
 user_phrase = chewingConfig.getUserPhrase().encode("UTF-8")
 # print(search_paths, user_phrase)
 chewing_ctx = ChewingContext(syspath = search_paths, userpath = user_phrase)  # new libchewing context

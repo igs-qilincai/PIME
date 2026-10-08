@@ -163,10 +163,10 @@ class ChewingTextService(TextService):
         # load libchewing context
         if not self.chewingContext:
             cfg = chewingConfig  # 所有 ChewingTextService 共享一份設定物件
-            # syspath 參數可包含多個路徑，用 ; 分隔
+            # syspath 參數可包含多個路徑，Windows 用 ; 分隔，macOS 用 : 分隔
             # 此處把 user 設定檔目錄插入到 system-wide 資料檔路徑前
             # 如此使用者變更設定後，可以比系統預設值有優先權
-            search_paths = ";".join(
+            search_paths = os.pathsep.join(
                 (cfg.getConfigDir(), CHEWING_DATA_DIR)).encode("UTF-8")
             user_phrase = cfg.getUserPhrase().encode("UTF-8")
 
