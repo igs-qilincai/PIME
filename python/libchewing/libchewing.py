@@ -36,6 +36,9 @@ _libchewing.chewing_cand_String_static.restype = c_char_p
 _libchewing.chewing_bopomofo_String_static.restype = c_char_p
 _libchewing.chewing_aux_String_static.restype = c_char_p
 _libchewing.chewing_kbtype_String_static.restype = c_char_p
+# ChewingContext* must not be truncated to a 32-bit int on 64-bit platforms
+_libchewing.chewing_new.restype = c_void_p
+_libchewing.chewing_new2.restype = c_void_p
 
 
 def Init(datadir, userdir):
@@ -45,15 +48,15 @@ def Init(datadir, userdir):
 class ChewingContext:
     def __init__(self, **kwargs):
         if not kwargs:
-            self.ctx = _libchewing.chewing_new()
+            self.ctx = c_void_p(_libchewing.chewing_new())
         else:
             syspath = kwargs.get("syspath", None)
             userpath = kwargs.get("userpath", None)
-            self.ctx = _libchewing.chewing_new2(
+            self.ctx = c_void_p(_libchewing.chewing_new2(
                 syspath,
                 userpath,
                 None,
-                None)
+                None))
 
     def __del__(self):
         _libchewing.chewing_delete(self.ctx)
