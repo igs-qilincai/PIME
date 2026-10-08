@@ -90,4 +90,9 @@ Directory structure
   * node/input_methods:
     All input method modules implemented using node.js. If you're trying to implement your
     own input method, you should put your module in this directory.
+* macos
+  The macOS port (InputMethodKit), which supports the chewing input method
+  only. The Swift app replaces both PIMETextService and PIMELauncher: it
+  starts python/server.py itself and talks to it over stdin/stdout with the
+  same protocol. See macos/README.md for details.
 
