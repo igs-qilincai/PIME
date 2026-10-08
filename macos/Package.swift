@@ -12,6 +12,15 @@ let package = Package(
         // Platform-neutral logic: key mapping, the backend protocol and the
         // per-client session state. Kept free of AppKit so it can be tested.
         .target(name: "PIMECore"),
+        // The input method app itself (InputMethodKit + AppKit UI).
+        .executableTarget(
+            name: "PIME",
+            dependencies: ["PIMECore"],
+            linkerSettings: [
+                .linkedFramework("InputMethodKit"),
+                .linkedFramework("Carbon"),
+            ]
+        ),
         .testTarget(name: "PIMECoreTests", dependencies: ["PIMECore"]),
     ],
     swiftLanguageModes: [.v5]
