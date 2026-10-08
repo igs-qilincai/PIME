@@ -22,6 +22,8 @@ import os
 import uuid  # use to generate a random auth token
 import random
 import json
+import pathlib
+import webbrowser
 
 current_dir = os.path.dirname(__file__)
 
@@ -282,7 +284,10 @@ class ConfigApp(tornado.web.Application):
         filename = os.path.join(localdata_dir, "launch_{}.html".format(tool_name))
         with open(filename, "w") as f:
             f.write(user_html)
+        if sys.platform == "win32":
             os.startfile(filename)
+        else:
+            webbrowser.open(pathlib.Path(filename).as_uri())
 
     def run(self, tool_name):
         # find a port number that's available

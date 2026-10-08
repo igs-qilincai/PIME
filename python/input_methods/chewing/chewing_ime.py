@@ -24,7 +24,12 @@ from libchewing import ChewingContext, CHEWING_DATA_DIR, CHINESE_MODE, \
 
 import opencc  # OpenCC 繁體簡體中文轉換
 import sys
-from ctypes import windll  # for ShellExecuteW() and GetAsyncKeyState()
+if sys.platform == "win32":
+    from ctypes import windll  # for ShellExecuteW() and GetAsyncKeyState()
+else:
+    windll = None
+    import subprocess
+    import webbrowser
 
 from .chewing_config import chewingConfig, SWITCH_LANG_WITH_BOTH_SHIFT, SWITCH_LANG_WITH_LEFT_SHIFT, SWITCH_LANG_WITH_RIGHT_SHIFT
 import sqlite3
@@ -46,6 +51,14 @@ keyNames = {
     VK_PRIOR: "PageUp",
     VK_NEXT: "PageDown"
 }
+
+# 用預設瀏覽器開啟網址
+def openUrl(url):
+    if windll:
+        os.startfile(url)
+    else:
+        webbrowser.open(url)
+
 
 # shift + space 熱鍵的 GUID
 SHIFT_SPACE_GUID = "{f1dae0fb-8091-44a7-8a0c-3082a1515447}"
@@ -739,14 +752,19 @@ class ChewingTextService(TextService):
     # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getasynckeystate
     # 當 keyCode 對應的按鍵、曾被按下觸發過，GetAsyncKeyState() 的回傳值會 >= 1
     def isPressed(self, keyCode):
-        return windll.user32.GetAsyncKeyState(keyCode) >= 1
+        if windll:
+            return windll.user32.GetAsyncKeyState(keyCode) >= 1
+        # 其他平台沒有全域的按鍵狀態 API，改用最後一次按下按鍵時，輸入法前端送來的按鍵狀態
+        return self.lastKeyEvent is not None and self.lastKeyEvent.isKeyDown(keyCode)
 
     # 取得 Capslock 按鍵狀態
     def getCapslockState(self):
-        if ((windll.user32.GetKeyState(VK_CAPITAL) & 0x0001) != 0):
-            return True
-        else:
-            return False
+        if windll:
+            if ((windll.user32.GetKeyState(VK_CAPITAL) & 0x0001) != 0):
+                return True
+            else:
+                return False
+        return self.lastKeyEvent is not None and self.lastKeyEvent.isKeyToggled(VK_CAPITAL)
 
     def onKeyUp(self, keyEvent):
         pressedDuration = time.time() - self.lastKeyDownTime
@@ -791,31 +809,38 @@ class ChewingTextService(TextService):
                 self.curdir, "config_tool.py"), tool_name)
             python_exe = sys.executable  # 找到 python 執行檔
             # 使用我們自帶的 python runtime exe 執行 config tool
-            # 此處也可以用 subprocess，不過使用 windows API 比較方便
-            # SW_HIDE = 0 (hide the window)
-            r = windll.shell32.ShellExecuteW(
-                None, "open", python_exe, config_tool, self.curdir, 0)
+            if windll:
+                # 此處也可以用 subprocess，不過使用 windows API 比較方便
+                # SW_HIDE = 0 (hide the window)
+                r = windll.shell32.ShellExecuteW(
+                    None, "open", python_exe, config_tool, self.curdir, 0)
+            else:
+                # stdin/stdout 是和輸入法前端溝通用的管道，不能讓 config tool 繼承
+                subprocess.Popen(
+                    [python_exe, os.path.join(self.curdir, "config_tool.py"), tool_name],
+                    cwd=self.curdir, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL, start_new_session=True)
         elif commandId == ID_MODE_ICON:  # windows 8 mode icon
             self.toggleLanguageMode()  # 切換中英文模式
         elif commandId == ID_ABOUT:  # 關於新酷音輸入法
             pass
         elif commandId == ID_WEBSITE:  # visit chewing website
-            os.startfile("http://chewing.im/")
+            openUrl("http://chewing.im/")
         elif commandId == ID_GROUP:  # visit chewing google groups website
-            os.startfile("http://groups.google.com/group/chewing-devel")
+            openUrl("http://groups.google.com/group/chewing-devel")
         elif commandId == ID_BUGREPORT:  # visit bug tracker page
-            os.startfile("https://github.com/EasyIME/PIME/issues")
+            openUrl("https://github.com/EasyIME/PIME/issues")
         elif commandId == ID_DICT_BUGREPORT:
-            os.startfile("https://github.com/chewing/libchewing/issues")
+            openUrl("https://github.com/chewing/libchewing/issues")
         elif commandId == ID_MOEDICT:  # a very awesome online Chinese dictionary
-            os.startfile("https://www.moedict.tw/")
+            openUrl("https://www.moedict.tw/")
         elif commandId == ID_SIMPDICT:  # a simplified version of the online dictonary
-            os.startfile("http://dict.concised.moe.edu.tw/jbdic/")
+            openUrl("http://dict.concised.moe.edu.tw/jbdic/")
         elif commandId == ID_LITTLEDICT:  # a simplified dictionary for little children
-            os.startfile(
+            openUrl(
                 "http://dict.mini.moe.edu.tw/cgi-bin/gdic/gsweb.cgi?o=ddictionary")
         elif commandId == ID_PROVERBDICT:  # a dictionary for proverbs
-            os.startfile(
+            openUrl(
                 "https://dict.idioms.moe.edu.tw/")
         elif commandId == ID_CHEWING_HELP:
             pass
