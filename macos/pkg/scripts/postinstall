@@ -1,0 +1,14 @@
+#!/bin/sh
+# Register the newly installed PIME.app and start it, like install.sh.
+#
+# $2 is the install location, i.e. ~/Library/Input Methods.
+#
+# Written with assistance from Claude Code (Claude Opus 5.5).
+
+APP="$2/PIME.app"
+echo "PIME postinstall: user $(id -un), app $APP"
+"$APP/Contents/MacOS/PIME" --install
+# Start it now. The system launcher (imklaunchagent) may not know a newly
+# installed input method until the next login.
+open -g "$APP"
+exit 0

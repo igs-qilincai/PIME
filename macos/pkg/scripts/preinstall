@@ -1,0 +1,15 @@
+#!/bin/sh
+# Quit PIME and remove the previous PIME.app before installing, like
+# install.sh. Installer would otherwise merge the new files into the old
+# bundle, and files left over from it would break its code signature.
+#
+# $2 is the install location, i.e. ~/Library/Input Methods.
+#
+# Written with assistance from Claude Code (Claude Opus 5.5).
+
+echo "PIME preinstall: user $(id -un), location $2"
+pkill -x PIME
+if [ -n "$2" ]; then
+    rm -rf "$2/PIME.app"
+fi
+exit 0

@@ -30,6 +30,29 @@ Run the unit tests with:
 
     macos/scripts/test.sh
 
+## Installer package
+
+To give PIME to others, build an installer package from
+`macos/build/PIME.app`:
+
+    macos/scripts/build_pkg.sh     # builds macos/build/PIME-<version>-arm64.pkg
+
+The package installs PIME.app into `~/Library/Input Methods` without an
+administrator password, and runs the same steps as `install.sh`. It is
+used instead of a zip or disk image because files installed by Installer
+are not quarantined, so Gatekeeper does not block the input method, which
+is not notarized.
+
+The package itself is not signed, so macOS refuses to open the downloaded
+package at first. Open it once, then click Open Anyway in System Settings >
+Privacy & Security, or remove the quarantine attribute:
+
+    xattr -d com.apple.quarantine PIME-*.pkg
+
+To install it from the command line:
+
+    installer -pkg PIME-*.pkg -target CurrentUserHomeDirectory
+
 ## Usage
 
 The keys are the same as on Windows, e.g. Shift switches between Chinese
@@ -63,6 +86,7 @@ libchewing is built from the same source as the Windows `chewing.dll`, so
 
     pkill -x PIME
     rm -rf ~/Library/Input\ Methods/PIME.app
+    pkgutil --volume ~ --forget org.easyime.inputmethod.PIME   # if installed from the package
 
 Then remove 新酷音 (PIME) from the input sources in System Settings.
 

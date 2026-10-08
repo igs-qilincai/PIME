@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Installer of PIME.app; build_pkg.sh fills in @VERSION@ and @COMPONENT@.
+     Written with assistance from Claude Code (Claude Opus 5.5). -->
+<installer-gui-script minSpecVersion="2">
+    <title>新酷音 (PIME)</title>
+    <conclusion file="conclusion.html" mime-type="text/html"/>
+    <options customize="never" require-scripts="false" hostArchitectures="arm64"/>
+    <!-- Install into ~/Library/Input Methods, like install.sh. This needs
+         no administrator password and runs the scripts as the user. -->
+    <domains enable_anywhere="false" enable_currentUserHome="true" enable_localSystem="false"/>
+    <allowed-os-versions>
+        <os-version min="26.0"/>
+    </allowed-os-versions>
+    <choices-outline>
+        <line choice="default">
+            <line choice="org.easyime.inputmethod.PIME"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="org.easyime.inputmethod.PIME" visible="false">
+        <pkg-ref id="org.easyime.inputmethod.PIME"/>
+    </choice>
+    <pkg-ref id="org.easyime.inputmethod.PIME" version="@VERSION@" onConclusion="none">@COMPONENT@</pkg-ref>
+</installer-gui-script>
