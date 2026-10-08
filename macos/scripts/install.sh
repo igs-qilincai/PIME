@@ -25,6 +25,9 @@ mkdir -p "$DEST_DIR"
 rm -rf "$DEST"
 ditto "$APP_SRC" "$DEST"
 "$DEST/Contents/MacOS/PIME" --install
+# Start it now. The system launcher (imklaunchagent) may not know a newly
+# installed input method until the next login.
+open -g "$DEST"
 
 echo "Installed $DEST"
 echo "If 新酷音 (PIME) is not in the input menu yet, add it in"
