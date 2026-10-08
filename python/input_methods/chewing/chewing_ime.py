@@ -22,7 +22,10 @@ import time
 from libchewing import ChewingContext, CHEWING_DATA_DIR, CHINESE_MODE, \
     ENGLISH_MODE, FULLSHAPE_MODE, HALFSHAPE_MODE
 
-import opencc  # OpenCC 繁體簡體中文轉換
+try:
+    import opencc  # OpenCC 繁體簡體中文轉換
+except (ImportError, OSError):  # 沒有附帶 OpenCC 函式庫 (例如 macOS 版)
+    opencc = None
 import sys
 if sys.platform == "win32":
     from ctypes import windll  # for ShellExecuteW() and GetAsyncKeyState()
@@ -323,6 +326,8 @@ class ChewingTextService(TextService):
 
     # 設定輸出成簡體中文
     def setOutputSimplifiedChinese(self, outputSimpChinese):
+        if opencc is None:  # 沒有 OpenCC 無法轉換成簡體中文
+            outputSimpChinese = False
         self.outputSimpChinese = outputSimpChinese
         # 建立 OpenCC instance 用來做繁簡體中文轉換
         if outputSimpChinese:
@@ -872,7 +877,7 @@ class ChewingTextService(TextService):
                     {"text": "教育部成語典", "id": ID_PROVERBDICT},
                 ]},
                 {"text": "輸出簡體中文 (&S)", "id": ID_OUTPUT_SIMP_CHINESE,
-                 "checked": self.outputSimpChinese}
+                 "checked": self.outputSimpChinese, "enabled": opencc is not None}
             ]
         return None
 
