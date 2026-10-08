@@ -58,7 +58,8 @@ cp "$FRONTEND" "$APP/Contents/MacOS/PIME"
 VERSION="$(sed -E 's/[^0-9.].*$//' "$REPO_DIR/version.txt")"
 sed "s/@VERSION@/$VERSION/g" "$MACOS_DIR/Resources/Info.plist" > "$APP/Contents/Info.plist"
 cp -R "$MACOS_DIR/Resources/en.lproj" "$MACOS_DIR/Resources/zh-Hant.lproj" "$RESOURCES/"
-sips -s format tiff "$REPO_DIR/python/input_methods/chewing/icon.ico" --out "$RESOURCES/PIME.tiff" > /dev/null
+swiftc -O -o "$BUILD_DIR/make_icon" "$SCRIPT_DIR/make_icon.swift"
+"$BUILD_DIR/make_icon" "酷" "$RESOURCES/PIME.tiff"
 cp "$REPO_DIR/version.txt" "$RESOURCES/version.txt"
 
 # Python runtime (the archive contains a top-level "python" directory)

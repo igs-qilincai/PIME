@@ -39,6 +39,9 @@
 	</array>
 	<key>tsInputMethodIconFileKey</key>
 	<string>PIME.tiff</string>
+	<!-- PIME.tiff only uses alpha; let macOS tint it like system icons. -->
+	<key>TISIconIsTemplate</key>
+	<true/>
 	<key>ComponentInputModeDict</key>
 	<dict>
 		<key>tsInputModeListKey</key>
