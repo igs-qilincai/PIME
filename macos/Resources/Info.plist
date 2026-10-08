@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Written with assistance from Claude Code (Claude Opus 5.5). -->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>zh-Hant</string>
+	<key>CFBundleExecutable</key>
+	<string>PIME</string>
+	<key>CFBundleIdentifier</key>
+	<string>org.easyime.inputmethod.PIME</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>PIME</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@VERSION@</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+	<key>LSBackgroundOnly</key>
+	<true/>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>InputMethodConnectionName</key>
+	<string>org.easyime.inputmethod.PIME_Connection</string>
+	<key>InputMethodServerControllerClass</key>
+	<string>PIMEInputController</string>
+	<key>TISIntendedLanguage</key>
+	<string>zh-Hant</string>
+	<key>tsInputMethodCharacterRepertoireKey</key>
+	<array>
+		<string>Hant</string>
+	</array>
+	<key>tsInputMethodIconFileKey</key>
+	<string>PIME.tiff</string>
+	<key>ComponentInputModeDict</key>
+	<dict>
+		<key>tsInputModeListKey</key>
+		<dict>
+			<key>org.easyime.inputmethod.PIME.Chewing</key>
+			<dict>
+				<key>TISInputSourceID</key>
+				<string>org.easyime.inputmethod.PIME.Chewing</string>
+				<key>TISIntendedLanguage</key>
+				<string>zh-Hant</string>
+				<key>tsInputModeScriptKey</key>
+				<string>smTradChinese</string>
+				<key>tsInputModePrimaryInScriptKey</key>
+				<true/>
+				<key>tsInputModeDefaultStateKey</key>
+				<true/>
+				<key>tsInputModeIsVisibleKey</key>
+				<true/>
+				<key>tsInputModeMenuIconFileKey</key>
+				<string>PIME.tiff</string>
+				<key>tsInputModeAlternateMenuIconFileKey</key>
+				<string>PIME.tiff</string>
+				<key>tsInputModePaletteIconFileKey</key>
+				<string>PIME.tiff</string>
+			</dict>
+		</dict>
+		<key>tsVisibleInputModeOrderedArrayKey</key>
+		<array>
+			<string>org.easyime.inputmethod.PIME.Chewing</string>
+		</array>
+	</dict>
+	<!-- The GUID of the chewing input method in its ime.json -->
+	<key>PIMETextServiceGUID</key>
+	<string>{F80736AA-28DB-423A-92C9-5540F501C939}</string>
+</dict>
+</plist>
