@@ -29,9 +29,15 @@ sys.path.append(os.path.dirname(__file__))
 from serviceManager import textServiceMgr
 
 
+def get_log_dir():
+    if sys.platform == "darwin":
+        return os.path.join(os.path.expanduser("~/Library/Logs"), "PIME")
+    return os.path.join(os.path.expandvars("%LOCALAPPDATA%"), "PIME", "Logs")
+
+
 def append_error_log(message):
     try:
-        log_dir = os.path.join(os.path.expandvars("%LOCALAPPDATA%"), "PIME", "Logs")
+        log_dir = get_log_dir()
         os.makedirs(log_dir, mode=0o700, exist_ok=True)
         with open(os.path.join(log_dir, "python_backend.log"), "a", encoding="utf-8") as log_file:
             log_file.write(message)

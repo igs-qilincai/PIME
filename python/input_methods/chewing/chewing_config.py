@@ -17,6 +17,7 @@
 
 import json
 import os
+import sys
 import time
 import shutil
 
@@ -78,8 +79,11 @@ class ChewingConfig:
         self.load()  # try to load from the config file
 
     def getConfigDir(self):
-        config_dir = os.path.join(
-            os.path.expandvars("%APPDATA%"), "PIME", "chewing")
+        if sys.platform == "darwin":
+            base_dir = os.path.expanduser("~/Library/Application Support")
+        else:
+            base_dir = os.path.expandvars("%APPDATA%")
+        config_dir = os.path.join(base_dir, "PIME", "chewing")
         os.makedirs(config_dir, mode=0o700, exist_ok=True)
         return config_dir
 

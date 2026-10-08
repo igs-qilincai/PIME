@@ -34,8 +34,11 @@ from chewing_config import chewingConfig
 from libchewing import ChewingContext, CHEWING_DATA_DIR
 from ctypes import c_uint, byref, create_string_buffer
 
-config_dir = os.path.join(os.path.expandvars("%APPDATA%"), "PIME", "chewing")
-localdata_dir = os.path.join(os.path.expandvars("%LOCALAPPDATA%"), "PIME", "chewing")
+config_dir = chewingConfig.getConfigDir()
+if sys.platform == "darwin":
+    localdata_dir = os.path.join(os.path.expanduser("~/Library/Caches"), "PIME", "chewing")
+else:
+    localdata_dir = os.path.join(os.path.expandvars("%LOCALAPPDATA%"), "PIME", "chewing")
 
 COOKIE_ID = "chewing_config_token"
 
