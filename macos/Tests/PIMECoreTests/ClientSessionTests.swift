@@ -108,6 +108,21 @@ private let guid = "{F80736AA-28DB-423A-92C9-5540F501C939}"
         #expect(transport.methods.suffix(2) == ["filterKeyUp", "onKeyUp"])
     }
 
+    @Test func bypassedKeyIsOnlyFiltered() {
+        let transport = FakeTransport()
+        transport.replies["filterKeyDown"] = ["return": true]
+        transport.replies["filterKeyUp"] = ["return": true]
+        let session = ClientSession(guid: guid, transport: transport)
+        _ = session.activate()
+        // Command+Shift+P
+        let modifiers: ModifierKeys = [.leftCommand, .leftShift]
+        let up = KeyEventData.make(macKeyCode: 0x23, modifiers: modifiers, isKeyDown: false)!
+        let replies = session.bypassKey(down: key(0x23, modifiers), up: up)
+        #expect(transport.methods == ["init", "onActivate", "filterKeyDown", "filterKeyUp"])
+        #expect(transport.requests[2]["keyCode"] as? Int == 0x50)
+        #expect(replies.count == 2)
+    }
+
     @Test func reinitializesAfterBackendRestart() {
         let transport = FakeTransport()
         transport.replies["onKeyDown"] = ["compositionString": "ㄒ"]

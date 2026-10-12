@@ -61,19 +61,23 @@ final class InputController: IMKInputController {
         let modifiers = ModifierKeys(eventFlags: event.modifierFlags.rawValue)
         switch event.type {
         case .keyDown:
-            // Command shortcuts belong to the application.
-            guard modifiers.isDisjoint(with: .command),
-                  let down = KeyEventData.make(macKeyCode: event.keyCode, modifiers: modifiers,
-                                               isKeyDown: true, isRepeat: event.isARepeat)
+            guard let down = KeyEventData.make(macKeyCode: event.keyCode, modifiers: modifiers,
+                                               isKeyDown: true, isRepeat: event.isARepeat),
+                  let up = KeyEventData.make(macKeyCode: event.keyCode, modifiers: modifiers, isKeyDown: false)
             else { return false }
+            // Command shortcuts belong to the application. The backend still
+            // has to see them, or it takes Command+Shift+P for a lone Shift
+            // press and switches to English.
+            if !modifiers.isDisjoint(with: .command) {
+                apply(session.bypassKey(down: down, up: up), client: sender)
+                return false
+            }
             let result = session.keyDown(down, tfModifiers: modifiers.tfModifiers)
             apply(result.replies, client: sender)
             // Only key down events are requested from InputMethodKit, but the
             // backends expect a key up for every key down, e.g. to tell a
             // lone Shift press from Shift + letter. Send it right away.
-            if let up = KeyEventData.make(macKeyCode: event.keyCode, modifiers: modifiers, isKeyDown: false) {
-                apply(session.keyUp(up), client: sender)
-            }
+            apply(session.keyUp(up), client: sender)
             return result.handled
         case .flagsChanged:
             handleModifierKey(event, modifiers: modifiers, client: sender)

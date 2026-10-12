@@ -111,6 +111,17 @@ public final class ClientSession {
         return replies
     }
 
+    /// Shows the backend a key that always goes to the application, e.g. a
+    /// Command shortcut, without letting it handle the key. Backends track
+    /// the last key pressed, e.g. chewing tells a lone Shift press from
+    /// Shift + another key this way.
+    public func bypassKey(down: KeyEventData, up: KeyEventData) -> [BackendReply] {
+        var replies: [BackendReply] = []
+        _ = call("filterKeyDown", down.requestFields, into: &replies)
+        _ = call("filterKeyUp", up.requestFields, into: &replies)
+        return replies
+    }
+
     /// Tells the backend the composition was ended by the system, e.g. the
     /// app committed it because the user clicked elsewhere.
     public func terminateComposition() -> [BackendReply] {
