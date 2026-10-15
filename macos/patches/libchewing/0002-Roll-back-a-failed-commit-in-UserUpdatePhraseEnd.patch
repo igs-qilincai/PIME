@@ -1,0 +1,33 @@
+Roll back a failed commit in UserUpdatePhraseEnd()
+
+UserUpdatePhraseEnd() ignored the result of END. When the commit fails
+with SQLITE_BUSY because another connection is reading, the transaction
+stays open and keeps its lock, so the commits of all other connections and
+chewing_new2() fail from then on. Roll it back instead; only the phrases
+learned in that transaction are lost.
+
+Written with assistance from Claude Code (Claude Opus 5.5).
+
+--- a/src/userphrase-sql.c
++++ b/src/userphrase-sql.c
+@@ -332,7 +332,19 @@
+ 
+ void UserUpdatePhraseEnd(ChewingData *pgdata)
+ {
+-    sqlite3_exec(pgdata->static_data.db, "END", 0, 0, 0);
++    int ret;
++
++    ret = sqlite3_exec(pgdata->static_data.db, "END", 0, 0, 0);
++    if (ret != SQLITE_OK) {
++        /*
++         * The commit fails while another connection reads the database.
++         * An open transaction would keep a lock that makes the commits of
++         * every other connection and the creation of new contexts fail, so
++         * give up the phrases learned in it instead.
++         */
++        LOG_ERROR("Cannot commit userphrase updates, error = %d", ret);
++        sqlite3_exec(pgdata->static_data.db, "ROLLBACK", 0, 0, 0);
++    }
+ }
+ 
+ int UserRemovePhrase(ChewingData *pgdata, const uint16_t phoneSeq[], const char wordSeq[])

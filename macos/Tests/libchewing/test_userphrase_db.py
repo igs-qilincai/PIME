@@ -98,6 +98,21 @@ class UserPhraseDatabaseTest(unittest.TestCase):
         self.assert_database_unlocked()
         self.assertTrue(self.new_context(), "chewing_new2() failed")
 
+    def test_failed_auto_learn_commit_is_rolled_back(self):
+        ctx = self.new_context()
+        self.assertTrue(ctx)
+        self.chewing.type(ctx, "su3j4 <Enter>")
+
+        # Another reader makes the commit of the next auto-learn fail.
+        reader = sqlite3.connect(self.user_path)
+        rows = reader.execute("SELECT phrase FROM userphrase_v1")
+        self.assertIsNotNone(rows.fetchone())
+        self.chewing.type(ctx, "cl3 <Enter>")
+        reader.close()
+
+        self.assert_database_unlocked()
+        self.assertTrue(self.new_context(), "chewing_new2() failed")
+
 
 def main():
     global LIB_PATH, DATA_DIR
