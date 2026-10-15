@@ -133,10 +133,13 @@ class Server(object):
 
     def remove_client(self, client_id):
         print("client disconnected:", client_id, file=sys.stderr)
-        try:
-            del self.clients[client_id]
-        except KeyError:
-            pass
+        client = self.clients.pop(client_id, None)
+        if client:
+            # The client and its text service refer to each other, so only the
+            # cyclic garbage collector, which seldom runs in this mostly idle
+            # process, would free them and the resources of the input method,
+            # e.g. a libchewing context with its open user phrase database.
+            client.service = None
 
 
 def main():

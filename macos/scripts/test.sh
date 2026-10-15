@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run the unit tests of the macOS front end, the libchewing patches and the
-# chewing backend.
+# Python backend.
 #
 # With only the Command Line Tools installed (no Xcode), SwiftPM does not
 # find the Swift Testing framework by itself, so pass its location.
@@ -14,6 +14,8 @@ scripts/build_libchewing.sh >/dev/null
 /usr/bin/python3 -I Tests/libchewing/test_userphrase_db.py \
     build/libchewing/libchewing.dylib ../python/libchewing/data
 /usr/bin/python3 -I Tests/backend/test_chewing_ime.py ../python
+# serviceManager prints the input methods it finds to stdout.
+/usr/bin/python3 -I Tests/backend/test_server.py ../python >/dev/null
 
 DEV_DIR="$(xcode-select -p)"
 FRAMEWORKS="$DEV_DIR/Library/Developer/Frameworks"
