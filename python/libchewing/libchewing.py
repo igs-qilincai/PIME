@@ -64,6 +64,10 @@ class ChewingContext:
                 userpath,
                 None,
                 None))
+        # NULL on failure, e.g. when the user phrase database is locked.
+        # Every call on it would fail and return -1.
+        if not self.ctx.value:
+            raise OSError("libchewing cannot create a context")
 
     def __del__(self):
         _libchewing.chewing_delete(self.ctx)

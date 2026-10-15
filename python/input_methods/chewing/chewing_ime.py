@@ -97,6 +97,7 @@ class ChewingTextService(TextService):
         self.curdir = os.path.abspath(os.path.dirname(__file__))
         self.icon_dir = os.path.join(self.curdir, "icons")
         self.chewingContext = None  # libchewing context
+        self.retryChewingContext = False  # libchewing context 建立失敗，需要重試
 
         self.langMode = -1
         self.shapeMode = -1
@@ -129,7 +130,7 @@ class ChewingTextService(TextService):
             # 資料改變需整個 reload，重建一個新的 chewing context
             self.chewingContext = None
             self.initChewingContext()
-        elif cfg.isConfigChanged(self.configVersion):
+        elif cfg.isConfigChanged(self.configVersion) and self.chewingContext:
             # 只有偵測到設定檔變更，需要套用新設定
             self.applyConfig()
 
@@ -187,8 +188,15 @@ class ChewingTextService(TextService):
             user_phrase = cfg.getUserPhrase().encode("UTF-8")
 
             # 建立 ChewingContext，此處路徑需要 UTF-8 編碼
-            chewingContext = ChewingContext(
-                syspath=search_paths, userpath=user_phrase)
+            try:
+                chewingContext = ChewingContext(
+                    syspath=search_paths, userpath=user_phrase)
+            except OSError as e:
+                # 例如使用者詞庫被鎖住時會失敗。先不處理按鍵，下次按鍵時再重試
+                print("ERROR:", e, file=sys.stderr)
+                self.retryChewingContext = True
+                return
+            self.retryChewingContext = False
             self.chewingContext = chewingContext
             chewingContext.set_maxChiSymbolLen(50)  # 編輯區長度：50 bytes
 
@@ -297,6 +305,7 @@ class ChewingTextService(TextService):
         TextService.onDeactivate(self)
         # 釋放 libchewing context 的資源
         self.chewingContext = None
+        self.retryChewingContext = False
         self.lastKeyEvent = None
 
         # 丟棄輸入法狀態
@@ -349,6 +358,17 @@ class ChewingTextService(TextService):
         self.lastKeyEvent = keyEvent
         if self.lastKeyDownTime == 0.0:
             self.lastKeyDownTime = time.time()
+
+        # 新酷音引擎先前建立失敗，再試一次
+        if self.retryChewingContext:
+            self.initChewingContext()
+            if self.chewingContext:
+                # 語言列圖示是在沒有引擎時建立的，需要更新
+                self.updateSwitchLangIcon = True
+                self.updateLangButtons()
+        # 沒有新酷音引擎就無法處理按鍵，原封不動交給應用程式，以免按鍵被吃掉
+        if not self.chewingContext:
+            return False
 
         # 使用者開始輸入，還沒送出前的編輯區內容稱 composition string
         # isComposing() 是 False，表示目前沒有正在編輯中文
@@ -960,6 +980,7 @@ class ChewingTextService(TextService):
 
             # self.hideMessage() # hide message window, if there's any
             self.chewingContext = None  # 釋放新酷音引擎資源
+            self.retryChewingContext = False
             # disable 其他語言列按鈕
             self.removeLangButtons()
 
