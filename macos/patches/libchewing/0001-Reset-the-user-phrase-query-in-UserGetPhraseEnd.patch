@@ -1,0 +1,40 @@
+Reset the user phrase query in UserGetPhraseEnd()
+
+UserGetPhraseEnd() did nothing, so a caller that stops at the first row,
+e.g. FindInterval() checking whether a user phrase exists, left the query
+at a row. The connection then keeps a read lock on the database, every
+other connection's COMMIT fails with SQLITE_BUSY, and since
+UserUpdatePhraseEnd() ignores that, their transactions stay open and
+chewing_new2() fails for all new contexts.
+
+PIME opens one context per input client in a single backend process, so
+this locks up new clients until the backend restarts.
+
+Written with assistance from Claude Code (Claude Opus 5.5).
+
+--- a/src/userphrase-sql.c
++++ b/src/userphrase-sql.c
+@@ -441,9 +441,21 @@
+     return &pgdata->userphrase_data;
+ }
+ 
+-void UserGetPhraseEnd(ChewingData *pgdata UNUSED, const uint16_t phoneSeq[] UNUSED)
++void UserGetPhraseEnd(ChewingData *pgdata, const uint16_t phoneSeq[] UNUSED)
+ {
+-    /* FIXME: Remove this */
++    int ret;
++
++    assert(pgdata);
++
++    /*
++     * Callers may stop before the last row. A query left at a row keeps a
++     * read lock on the database, and then the commits of every other
++     * connection to it fail.
++     */
++    ret = sqlite3_reset(pgdata->static_data.stmt_userphrase[STMT_USERPHRASE_SELECT_BY_PHONE]);
++    if (ret != SQLITE_OK) {
++        LOG_ERROR("sqlite3_reset returns %d", ret);
++    }
+ }
+ 
+ void IncreaseLifeTime(ChewingData *pgdata)

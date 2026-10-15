@@ -80,7 +80,8 @@ Differences from Windows:
 To keep your user phrases from Windows, copy the files in
 `%APPDATA%\PIME\chewing` to `~/Library/Application Support/PIME/chewing`.
 libchewing is built from the same source as the Windows `chewing.dll`, so
-`chewing.sqlite3` is compatible.
+`chewing.sqlite3` is compatible. The build applies the fixes in
+`macos/patches/libchewing` to a copy of that source.
 
 ## Uninstall
 

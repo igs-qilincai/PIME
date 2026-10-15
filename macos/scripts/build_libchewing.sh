@@ -4,6 +4,8 @@
 # The libchewing submodule is pinned to the same C source (v0.5.1-108) that
 # the Windows chewing.dll is built from, so the data files shipped in
 # python/libchewing/data and existing user phrase databases stay compatible.
+# The fixes in macos/patches/libchewing are applied to a copy of the sources,
+# so the submodule itself stays the same as for the Windows build.
 #
 # This script calls clang directly so that only the Xcode Command Line Tools
 # are needed (no cmake/autotools).
@@ -22,6 +24,7 @@ SRC="$REPO_DIR/libchewing"
 OUT="${1:-$REPO_DIR/macos/build/libchewing}"
 OUT="$(mkdir -p "$OUT" && cd "$OUT" && pwd)"
 OBJ="$OUT/obj"
+PATCHED="$OUT/source"
 
 MACOS_MIN="${MACOS_MIN:-26.0}"
 ARCH="${ARCH:-arm64}"
@@ -31,8 +34,13 @@ if [ ! -f "$SRC/src/chewingio.c" ]; then
     exit 1
 fi
 
-rm -rf "$OBJ"
-mkdir -p "$OBJ" "$OUT/include"
+rm -rf "$OBJ" "$PATCHED"
+mkdir -p "$OBJ" "$OUT/include" "$PATCHED"
+
+cp -R "$SRC/include" "$SRC/src" "$PATCHED/"
+for p in "$SCRIPT_DIR/../patches/libchewing"/*.patch; do
+    patch -s -N -p1 -d "$PATCHED" -i "$p"
+done
 
 # Equivalent of cmake/config.h.in for macOS.
 cat > "$OUT/include/config.h" <<'EOF'
@@ -54,10 +62,10 @@ CFLAGS=(
     # Only used as a last-resort search path; PIME always passes its own.
     -DCHEWING_DATADIR="\"/usr/local/share/libchewing\""
     -I"$OUT/include"
-    -I"$SRC/include"
-    -I"$SRC/include/internal"
-    -I"$SRC/src"
-    -I"$SRC/src/porting_layer/include"
+    -I"$PATCHED/include"
+    -I"$PATCHED/include/internal"
+    -I"$PATCHED/src"
+    -I"$PATCHED/src/porting_layer/include"
 )
 
 LIB_SRCS=(
@@ -83,7 +91,7 @@ LIB_SRCS=(
 objs=()
 for f in "${LIB_SRCS[@]}"; do
     o="$OBJ/$(echo "$f" | tr '/' '_').o"
-    clang "${CFLAGS[@]}" -c "$SRC/$f" -o "$o"
+    clang "${CFLAGS[@]}" -c "$PATCHED/$f" -o "$o"
     objs+=("$o")
 done
 
