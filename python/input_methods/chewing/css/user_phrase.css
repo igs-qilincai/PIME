@@ -17,6 +17,7 @@
 }
 
 #phrase_table {
+    border-collapse: collapse;
     width: 100%;
 }
 
@@ -43,7 +44,22 @@
     cursor: pointer;
 }
 
-#table_content tr:hover,
+/* rows are rendered on demand and need the same height */
+#table_content td {
+    white-space: nowrap;
+}
+
+/* stand-in for the rows that are not rendered */
+#table_content tr.spacer {
+    cursor: default;
+}
+
+#table_content tr.spacer td {
+    border: 0;
+    padding: 0;
+}
+
+#table_content tr:not(.spacer):hover,
 .phrase_selected {
     background-color: #eab342;
 }

@@ -1,3 +1,78 @@
+// Only the rows near the viewport are kept in the DOM, and spacer rows take
+// the place of the others. With thousands of rows in the DOM, Chrome on macOS
+// was seen holding mouse clicks for seconds before the page got them.
+const RENDER_MARGIN_ROWS = 30;
+
+let userPhrases = []; // [{phrase, bopomofo}] in table order
+let selectedPhrases = new Set(); // items of userPhrases
+let phraseRowHeight = 0; // distance between two rows, measured on first render
+let renderedRange = null; // [start, end) of userPhrases in the DOM
+
+function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+function phraseRowHtml(index) {
+    let item = userPhrases[index];
+    let selected = selectedPhrases.has(item);
+    return `<tr data-index="${index}"${selected ? ' class="phrase_selected"' : ""}>` +
+        `<td><input type="checkbox"${selected ? " checked" : ""}>${escapeHtml(item.phrase)}</td>` +
+        `<td>${escapeHtml(item.bopomofo)}</td></tr>`;
+}
+
+function spacerRowHtml(rows) {
+    return `<tr class="spacer"><td colspan="2" style="height: ${rows * phraseRowHeight}px"></td></tr>`;
+}
+
+// Document y of the first phrase row
+function phraseTableTop() {
+    return document.getElementById("table_content").getBoundingClientRect().top + window.scrollY;
+}
+
+// Render the rows that are visible now. Without force, nothing is done
+// while the visible rows are already in the DOM.
+function renderPhraseRows(force) {
+    let tbody = document.getElementById("table_content");
+    let count = userPhrases.length;
+    if (count === 0) {
+        tbody.innerHTML = "";
+        renderedRange = null;
+        return;
+    }
+
+    if (phraseRowHeight === 0) {
+        tbody.innerHTML = phraseRowHtml(0) + (count > 1 ? phraseRowHtml(1) : "");
+        let rows = tbody.rows;
+        phraseRowHeight = (count > 1) ?
+            rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top :
+            rows[0].getBoundingClientRect().height;
+        force = true;
+    }
+
+    let top = window.scrollY - phraseTableTop();
+    let first = Math.min(count, Math.max(0, Math.floor(top / phraseRowHeight)));
+    let last = Math.min(count, Math.max(0, Math.ceil((top + window.innerHeight) / phraseRowHeight)));
+    if (!force && renderedRange && first >= renderedRange[0] && last <= renderedRange[1]) {
+        return;
+    }
+
+    let start = Math.max(0, first - RENDER_MARGIN_ROWS);
+    let end = Math.max(start, Math.min(count, last + RENDER_MARGIN_ROWS));
+    let html = (start > 0) ? spacerRowHtml(start) : "";
+    for (let i = start; i < end; i++) {
+        html += phraseRowHtml(i);
+    }
+    if (end < count) {
+        html += spacerRowHtml(count - end);
+    }
+    tbody.innerHTML = html;
+    renderedRange = [start, end];
+}
+
+function updateDeleteCount() {
+    $("#delete_count").html(selectedPhrases.size !== 0 ? `（${selectedPhrases.size}）` : "");
+}
+
 // Load user phrases
 function loadUserPhrases() {
     $("#add_dialog").dialog("close");
@@ -13,58 +88,16 @@ function loadUserPhrases() {
     // Get user_phrases
     $.get("/user_phrases", function(data, status) {
         if (data.data != undefined) {
-            let user_phrase_html = data.data.map(function(user_phrase) {
-                return `<tr>
-                <td><input type="checkbox" data-phrase="${user_phrase.phrase}" data-bopomofo="${user_phrase.bopomofo}">${user_phrase.phrase}</td>
-                <td>${user_phrase.bopomofo}</td>
-                </tr>`;
-            }).join("");
-
-            // For performace reason, use DOM API to render content
-            document.querySelector("#table_content").innerHTML = user_phrase_html;
+            userPhrases = data.data;
+            selectedPhrases.clear();
+            renderPhraseRows(true);
             $("#phrase_count").html(`共&nbsp;${data.data.length}&nbsp;個詞彙`);
         }
 
         // Hide loading overlay
         $.LoadingOverlay("hide", true);
 
-        // Register click table row to select phrase
-        $("#table_content").on("click", function(e) {
-            let targetObj = $(e.target);
-
-            // Register click table row to select phrase
-            if (targetObj.is("td")) {
-                targetObj.parent().find("input[type=checkbox]")
-                    .prop("checked", !targetObj.parent().find("input[type=checkbox]").prop("checked"));
-                targetObj.parent().toggleClass("phrase_selected");
-            }
-
-            // Checkbox hightlight phrase row
-            if (targetObj.is("input[type=checkbox]")) {
-                targetObj.parent().parent().toggleClass("phrase_selected");
-            }
-
-            // Update delete phrases count
-            if ($("#table_content input[type=checkbox]:checked").length !== 0) {
-                $("#delete_count").html(`（${$("#table_content input[type=checkbox]:checked").length}）`);
-            } else {
-                $("#delete_count").html("");
-            }
-        });
-
-        // Register click to select all phrases
         $("input[type=checkbox][name='select_all']").prop("checked", false);
-        $("input[type=checkbox][name='select_all']").on("click", function() {
-            if ($(this).prop("checked")) {
-                $("#table_content input[type=checkbox]").prop("checked", true);
-                $("#table_content tr").addClass("phrase_selected");
-                $("#delete_count").html(`（${$("#table_content input[type=checkbox]:checked").length}）`);
-            } else {
-                $("#table_content input[type=checkbox]").prop("checked", false);
-                $("#table_content tr").removeClass("phrase_selected");
-                $("#delete_count").html("");
-            }
-        });
     }, "json");
 }
 
@@ -142,24 +175,17 @@ function onAddPhrase() {
     }
 
     // Check phrase not exist
-    let phrase_repeated;
-    let phrase_repeated_index;
-    $("#table_content input[type=checkbox]").each(function(idx, item) {
-        if (phrase == $(item).data("phrase")) {
-            phrase_repeated = true;
-            phrase_repeated_index = idx;
-            return false;
-        }
-    });
+    let phrase_repeated_index = userPhrases.findIndex((item) => item.phrase == phrase);
 
-    if (phrase_repeated == true) {
-        let phrase_repeated_item = $(`#table_content input[type=checkbox]:eq(${phrase_repeated_index})`);
+    if (phrase_repeated_index !== -1) {
         $("html, body").animate({
-            scrollTop: phrase_repeated_item.offset().top - 200
-        }, 200);
-        phrase_repeated_item.parent().effect("highlight", {
-            color: "#f2f207"
-        }, 5000);
+            scrollTop: phraseTableTop() + phrase_repeated_index * phraseRowHeight - 200
+        }, 200).promise().done(() => {
+            renderPhraseRows(false);
+            $(`#table_content tr[data-index=${phrase_repeated_index}] td:first`).effect("highlight", {
+                color: "#f2f207"
+            }, 5000);
+        });
         jQueryDialogAlert({
             message: "詞彙已經存在，請重新輸入",
             icon: "error",
@@ -203,7 +229,8 @@ function onAddPhrase() {
 
 // Execute remove phrase
 function onRemovePhrase() {
-    if ($("#table_content input[type=checkbox]:checked").length === 0) {
+    let selected = userPhrases.filter((item) => selectedPhrases.has(item));
+    if (selected.length === 0) {
         jQueryDialogAlert({
             message: "請先選擇要刪除的詞彙",
             icon: "error"
@@ -212,20 +239,16 @@ function onRemovePhrase() {
         let phrases = [];
         let confirm_text;
 
-        if ($("#table_content input[type=checkbox]:checked").length === 0) {
-            return;
-        }
-
-        confirm_text = `確定刪除以下 ${$("#table_content input[type=checkbox]:checked").length} 個詞彙？此動作無法復原<br><ul>`;
-        $("#table_content input[type=checkbox]:checked").each(function(phrase_index, item) {
+        confirm_text = `確定刪除以下 ${selected.length} 個詞彙？此動作無法復原<br><ul>`;
+        selected.forEach(function(item, phrase_index) {
             if (phrase_index < 10) {
-                confirm_text += `<li>${$(item).data("phrase")}</li>`;
+                confirm_text += `<li>${escapeHtml(item.phrase)}</li>`;
             } else if (phrase_index === 10) {
                 confirm_text += "<li>………（以下省略）</li>";
             }
             phrases.push({
-                phrase: $(item).data("phrase"), // 詞彙
-                bopomofo: $(item).data("bopomofo") // 注音
+                phrase: item.phrase, // 詞彙
+                bopomofo: item.bopomofo // 注音
             });
         });
         confirm_text += "</ul>";
@@ -466,6 +489,40 @@ $(function() {
             }
         }
         $("#bopomofo_input").val(bopomofo_string);
+    });
+
+    // Click a table row or its checkbox to select the phrase
+    $("#table_content").on("click", "tr[data-index]", function(e) {
+        let checkbox = this.querySelector("input[type=checkbox]");
+        if (e.target !== checkbox) {
+            checkbox.checked = !checkbox.checked;
+        }
+        let item = userPhrases[this.dataset.index];
+        if (checkbox.checked) {
+            selectedPhrases.add(item);
+        } else {
+            selectedPhrases.delete(item);
+        }
+        $(this).toggleClass("phrase_selected", checkbox.checked);
+        updateDeleteCount();
+    });
+
+    // Click to select all phrases
+    $("input[type=checkbox][name='select_all']").on("click", function() {
+        if ($(this).prop("checked")) {
+            userPhrases.forEach((item) => selectedPhrases.add(item));
+        } else {
+            selectedPhrases.clear();
+        }
+        renderPhraseRows(true);
+        updateDeleteCount();
+    });
+
+    window.addEventListener("scroll", () => renderPhraseRows(false), { passive: true });
+    window.addEventListener("resize", () => {
+        // the row height changes with the page zoom
+        phraseRowHeight = 0;
+        renderPhraseRows(true);
     });
 
     loadUserPhrases();
