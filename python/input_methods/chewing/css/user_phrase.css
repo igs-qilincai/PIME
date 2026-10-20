@@ -11,6 +11,13 @@
     width: 15em;
 }
 
+#user_phrase_buttons #search_input {
+    box-sizing: border-box;
+    display: block;
+    margin-top: 1em;
+    width: 100%;
+}
+
 #user_phrase_buttons #phrase_count {
     padding: 1em;
     position: absolute;

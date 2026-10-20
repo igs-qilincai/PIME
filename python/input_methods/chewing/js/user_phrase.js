@@ -4,6 +4,7 @@
 const RENDER_MARGIN_ROWS = 30;
 
 let userPhrases = []; // [{phrase, bopomofo}] in table order
+let shownPhrases = []; // the items of userPhrases that match the search text
 let selectedPhrases = new Set(); // items of userPhrases
 let phraseRowHeight = 0; // distance between two rows, measured on first render
 let renderedRange = null; // [start, end) of userPhrases in the DOM
@@ -13,7 +14,7 @@ function escapeHtml(text) {
 }
 
 function phraseRowHtml(index) {
-    let item = userPhrases[index];
+    let item = shownPhrases[index];
     let selected = selectedPhrases.has(item);
     return `<tr data-index="${index}"${selected ? ' class="phrase_selected"' : ""}>` +
         `<td><input type="checkbox"${selected ? " checked" : ""}>${escapeHtml(item.phrase)}</td>` +
@@ -33,7 +34,7 @@ function phraseTableTop() {
 // while the visible rows are already in the DOM.
 function renderPhraseRows(force) {
     let tbody = document.getElementById("table_content");
-    let count = userPhrases.length;
+    let count = shownPhrases.length;
     if (count === 0) {
         tbody.innerHTML = "";
         renderedRange = null;
@@ -73,6 +74,23 @@ function updateDeleteCount() {
     $("#delete_count").html(selectedPhrases.size !== 0 ? `（${selectedPhrases.size}）` : "");
 }
 
+// Show the phrases whose phrase or bopomofo contains the search text
+function filterPhrases() {
+    let text = $("#search_input").val().trim();
+    shownPhrases = (text === "") ? userPhrases :
+        userPhrases.filter((item) => item.phrase.includes(text) || item.bopomofo.includes(text));
+
+    let count_html = `共&nbsp;${userPhrases.length}&nbsp;個詞彙`;
+    if (text !== "") {
+        count_html = `符合&nbsp;${shownPhrases.length}&nbsp;個／${count_html}`;
+    }
+    $("#phrase_count").html(count_html);
+
+    $("input[type=checkbox][name='select_all']").prop("checked", false);
+    window.scrollTo(0, 0);
+    renderPhraseRows(true);
+}
+
 // Load user phrases
 function loadUserPhrases() {
     $("#add_dialog").dialog("close");
@@ -90,8 +108,7 @@ function loadUserPhrases() {
         if (data.data != undefined) {
             userPhrases = data.data;
             selectedPhrases.clear();
-            renderPhraseRows(true);
-            $("#phrase_count").html(`共&nbsp;${data.data.length}&nbsp;個詞彙`);
+            filterPhrases();
         }
 
         // Hide loading overlay
@@ -175,9 +192,15 @@ function onAddPhrase() {
     }
 
     // Check phrase not exist
-    let phrase_repeated_index = userPhrases.findIndex((item) => item.phrase == phrase);
+    let phrase_repeated = userPhrases.find((item) => item.phrase == phrase);
 
-    if (phrase_repeated_index !== -1) {
+    if (phrase_repeated !== undefined) {
+        // clear the search to show the phrase if it is filtered out
+        if (!shownPhrases.includes(phrase_repeated)) {
+            $("#search_input").val("");
+            filterPhrases();
+        }
+        let phrase_repeated_index = shownPhrases.indexOf(phrase_repeated);
         $("html, body").animate({
             scrollTop: phraseTableTop() + phrase_repeated_index * phraseRowHeight - 200
         }, 200).promise().done(() => {
@@ -497,7 +520,7 @@ $(function() {
         if (e.target !== checkbox) {
             checkbox.checked = !checkbox.checked;
         }
-        let item = userPhrases[this.dataset.index];
+        let item = shownPhrases[this.dataset.index];
         if (checkbox.checked) {
             selectedPhrases.add(item);
         } else {
@@ -507,16 +530,25 @@ $(function() {
         updateDeleteCount();
     });
 
-    // Click to select all phrases
+    // Click to select all shown phrases
     $("input[type=checkbox][name='select_all']").on("click", function() {
         if ($(this).prop("checked")) {
-            userPhrases.forEach((item) => selectedPhrases.add(item));
+            shownPhrases.forEach((item) => selectedPhrases.add(item));
         } else {
-            selectedPhrases.clear();
+            shownPhrases.forEach((item) => selectedPhrases.delete(item));
         }
         renderPhraseRows(true);
         updateDeleteCount();
     });
+
+    // Filter phrases while typing, but not in the middle of an IME composition
+    let search_input = document.getElementById("search_input");
+    search_input.addEventListener("input", (e) => {
+        if (!e.isComposing) {
+            filterPhrases();
+        }
+    });
+    search_input.addEventListener("compositionend", filterPhrases);
 
     window.addEventListener("scroll", () => renderPhraseRows(false), { passive: true });
     window.addEventListener("resize", () => {
