@@ -370,6 +370,8 @@ function jQueryDialogAlert(options) {
         width: 600,
         resizable: false,
         modal: true,
+        // keep the dialog in the viewport, so focusing it does not scroll the page
+        dialogClass: "fixed_dialog",
         title: title,
         buttons: {
             'Ok': function() {
