@@ -14,6 +14,7 @@ scripts/build_libchewing.sh >/dev/null
 /usr/bin/python3 -I Tests/libchewing/test_userphrase_db.py \
     build/libchewing/libchewing.dylib ../python/libchewing/data
 /usr/bin/python3 -I Tests/backend/test_chewing_ime.py ../python
+/usr/bin/python3 -I Tests/backend/test_opencc.py ../python
 # serviceManager prints the input methods it finds to stdout.
 /usr/bin/python3 -I Tests/backend/test_server.py ../python >/dev/null
 

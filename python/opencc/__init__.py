@@ -25,8 +25,12 @@ _opencc_dir = os.path.dirname(__file__)
 if sys.platform == "win32": # Windows
     _libopencc = CDLL(os.path.join(_opencc_dir, "opencc.dll"))
 else: # UNIX-like systems
-    _libopencc = CDLL("libopencc.so")
-_libopencc.opencc_error.restype = c_char_p
+    try:
+        _libopencc = CDLL("libopencc.so")
+    except OSError: # no OpenCC library, e.g. on macOS
+        _libopencc = None
+if _libopencc is not None:
+    _libopencc.opencc_error.restype = c_char_p
 
 class OpenCC:
     def __init__(self, configName):
@@ -50,3 +54,7 @@ class OpenCC:
 
     def __del__(self):
         _libopencc.opencc_close(self.opencc)
+
+if _libopencc is None:
+    # Without the library, convert in pure Python with the same data files.
+    from .pure_opencc import OpenCC
