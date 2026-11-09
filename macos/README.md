@@ -97,6 +97,13 @@ Then remove 新酷音 (PIME) from the input sources in System Settings.
   The system launcher may not know a newly installed input method until
   the next login. `install.sh` starts PIME once to work around this; log
   out and back in if it happens again.
+* **The input menu loses its icon and 新酷音 (PIME), but typing still
+  works.** This is a macOS bug, e.g. after the selected input method is
+  killed, which installing does, and sometimes after unlocking the screen.
+  Showing the Keyboard Viewer makes the menu redraw. `install.sh` and the
+  package do this after installing; to do it by hand:
+
+      ~/Library/Input\ Methods/PIME.app/Contents/MacOS/PIME --refresh-input-menu
 * **Two copies of PIME.app with the same bundle ID** (e.g. the one in
   `macos/build`) can confuse LaunchServices. Unregister the build output:
 

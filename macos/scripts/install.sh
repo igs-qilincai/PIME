@@ -28,6 +28,10 @@ ditto "$APP_SRC" "$DEST"
 # Start it now. The system launcher (imklaunchagent) may not know a newly
 # installed input method until the next login.
 open -g "$DEST"
+# Killing the selected input method above can leave the input menu without
+# its icon (a macOS bug). Make it redraw once the new instance runs.
+sleep 1
+"$DEST/Contents/MacOS/PIME" --refresh-input-menu || true
 
 echo "Installed $DEST"
 echo "If 新酷音 (PIME) is not in the input menu yet, add it in"

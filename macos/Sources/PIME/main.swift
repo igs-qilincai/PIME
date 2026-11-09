@@ -9,6 +9,10 @@ import InputMethodKit
 if CommandLine.arguments.contains("--install") {
     exit(InputSourceInstaller.install() ? 0 : 1)
 }
+// "PIME --refresh-input-menu" makes the input menu redraw itself, then exits.
+if CommandLine.arguments.contains("--refresh-input-menu") {
+    exit(InputSourceInstaller.refreshInputMenu() ? 0 : 1)
+}
 
 guard let connectionName = Bundle.main.object(forInfoDictionaryKey: "InputMethodConnectionName") as? String,
       let server = IMKServer(name: connectionName, bundleIdentifier: Bundle.main.bundleIdentifier)

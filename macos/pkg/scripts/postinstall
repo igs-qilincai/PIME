@@ -11,4 +11,8 @@ echo "PIME postinstall: user $(id -un), app $APP"
 # Start it now. The system launcher (imklaunchagent) may not know a newly
 # installed input method until the next login.
 open -g "$APP"
+# preinstall killed PIME, which can leave the input menu without its icon
+# (a macOS bug). Make it redraw once the new instance runs.
+sleep 1
+"$APP/Contents/MacOS/PIME" --refresh-input-menu
 exit 0
