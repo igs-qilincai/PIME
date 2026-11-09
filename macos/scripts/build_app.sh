@@ -89,6 +89,9 @@ rsync -a --exclude __pycache__ "$REPO_DIR/python/input_methods/chewing" "$BACKEN
 cp "$REPO_DIR/python/libchewing"/{__init__.py,libchewing.py} "$BACKEND/libchewing/"
 cp -R "$REPO_DIR/python/libchewing/data" "$BACKEND/libchewing/"
 cp "$BUILD_DIR/libchewing/libchewing.dylib" "$BACKEND/libchewing/"
+# Simplified Chinese output. opencc.dll is for Windows; the opencc package
+# falls back to its pure Python converter with the same dictionaries.
+rsync -a --exclude __pycache__ --exclude opencc.dll "$REPO_DIR/python/opencc" "$BACKEND/"
 
 # Precompile everything. The bundle is read-only after signing, and
 # unchecked-hash .pyc files stay valid regardless of file timestamps.

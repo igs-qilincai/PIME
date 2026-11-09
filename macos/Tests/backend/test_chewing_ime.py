@@ -7,6 +7,8 @@ Usage: test_chewing_ime.py <PIME python dir>
 Written with assistance from Claude Code (Claude Opus 5.5).
 """
 
+import contextlib
+import io
 import os
 import sys
 import tempfile
@@ -14,6 +16,7 @@ import types
 import unittest
 
 ChewingTextService = None
+ID_OUTPUT_SIMP_CHINESE = None
 
 
 class FakeChewingContext:
@@ -77,9 +80,26 @@ class ChewingTextServiceTest(unittest.TestCase):
         self.assertIs(self.service.handleRequest(key_request("filterKeyDown", "v"))["return"], False)
         self.assertIsNone(self.service.chewingContext)
 
+    def test_simplified_chinese_output(self):
+        self.service.handleRequest({"method": "onActivate", "isKeyboardOpen": True, "seqNum": 0})
+        item, = [i for i in self.service.onMenu("settings") if i.get("id") == ID_OUTPUT_SIMP_CHINESE]
+        self.assertTrue(item["enabled"])
+        with contextlib.redirect_stdout(io.StringIO()):  # onCommand() prints the command
+            reply = self.service.handleRequest(
+                {"method": "onCommand", "id": ID_OUTPUT_SIMP_CHINESE, "type": 0, "seqNum": 0})
+        self.assertTrue(self.service.outputSimpChinese)
+        self.assertIn("simC.ico", reply["changeButton"][0]["icon"])
+
+        context = self.service.chewingContext
+        context.commit_Check = lambda: 1
+        context.commit_String = lambda: "臺灣國語".encode("UTF-8")
+        self.service.handleRequest(key_request("filterKeyDown", "v"))
+        reply = self.service.handleRequest(key_request("onKeyDown", "v"))
+        self.assertEqual(reply["commitString"], "台湾国语")
+
 
 def main():
-    global ChewingTextService
+    global ChewingTextService, ID_OUTPUT_SIMP_CHINESE
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     # Keep chewing's settings away from the user's.
@@ -91,7 +111,7 @@ def main():
     fake.CHEWING_DATA_DIR = home.name
     fake.CHINESE_MODE, fake.ENGLISH_MODE, fake.FULLSHAPE_MODE, fake.HALFSHAPE_MODE = 1, 0, 1, 0
     sys.modules["libchewing"] = fake
-    from input_methods.chewing.chewing_ime import ChewingTextService
+    from input_methods.chewing.chewing_ime import ChewingTextService, ID_OUTPUT_SIMP_CHINESE
     unittest.main(argv=sys.argv[:1] + sys.argv[2:])
 
 

@@ -67,7 +67,6 @@ Differences from Windows:
 * Command shortcuts always go to the application.
 * Bopomofo keys follow US key positions regardless of the macOS keyboard
   layout.
-* Simplified Chinese output is disabled because OpenCC is not bundled.
 * The candidate window cannot be clicked.
 
 ## Files
@@ -121,6 +120,10 @@ Then remove 新酷音 (PIME) from the input sources in System Settings.
 * `Sources/PIME`: the InputMethodKit app, candidate window and input menu.
 * There is no PIMELauncher on macOS: the app starts the Python backend
   itself and restarts it after it crashes or stops answering.
+* Simplified Chinese output does not need an OpenCC library: without
+  `opencc.dll`, the `opencc` package converts in pure Python
+  (`python/opencc/pure_opencc.py`) with the same dictionaries and
+  algorithm as the OpenCC 1.0.4 build used on Windows.
 * Each InputMethodKit client gets its own backend client, activated once.
   Focus changes do not reset the Chinese/English mode.
 * InputMethodKit does not send key up events, so the app sends one right
